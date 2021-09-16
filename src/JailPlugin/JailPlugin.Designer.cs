@@ -226,7 +226,7 @@ namespace JailPlugin
             this._logTextBox.ScrollBars = System.Windows.Forms.ScrollBars.Both;
             this._logTextBox.Size = new System.Drawing.Size(505, 223);
             this._logTextBox.TabIndex = 1;
-            this._logTextBox.Text = "Started..";
+            this._logTextBox.Text = "Started..\r\n";
             this._logTextBox.WordWrap = false;
             // 
             // _ttsUsesNamesCheckBox

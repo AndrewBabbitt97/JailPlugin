@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
@@ -42,17 +43,9 @@ namespace JailPlugin
         /// <summary>
         /// The log regex for jails
         /// </summary>
-        readonly Regex _logRegex = new Regex(":(.*)?:2B6(B|C):.*?:.*?:", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-        /// <summary>
-        /// The number of successful matches
-        /// </summary>
-        int _matchCount = 0;
-
-        /// <summary>
-        /// The list of matched playes
-        /// </summary>
-        readonly List<string> _matchedPlayers = new List<string>();
+        readonly Regex _logRegex = new Regex(
+            "^.{14} (00|1[56]):([0-9A-F]{8}|[0-9A-F]{4}):(Garuda|Titan):(2B6B|2B6C):[^:]*:[0-9A-F]{8}:(?<target>([^:]*)):?.*$",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         /// <summary>
         /// The stopwatch
@@ -60,19 +53,9 @@ namespace JailPlugin
         readonly Stopwatch _stopwatch = new Stopwatch();
 
         /// <summary>
-        /// The text to speach words for each player
+        /// The list of matched playes
         /// </summary>
-        readonly List<string> _ttsNumbers = new List<string>()
-        {
-            "One",
-            "Two",
-            "Three",
-            "Four",
-            "Five",
-            "Six",
-            "Seven",
-            "Eight"
-        };
+        readonly List<string> _matchedPlayers = new List<string>();
 
         /// <summary>
         /// Creates an instance of the jail plugin
@@ -149,54 +132,46 @@ namespace JailPlugin
 
             if (_stopwatch.ElapsedMilliseconds > 1000)
             {
-                _logTextBox.Text += $"{ Environment.NewLine + Environment.NewLine }=======[RESET]=======";
+                _logTextBox.AppendText($"{ Environment.NewLine + Environment.NewLine }=======[RESET]=======");
                 _stopwatch.Reset();
-                _matchCount = 0;
                 _matchedPlayers.Clear();
             }
 
-            _logTextBox.Text += Environment.NewLine + logInfo.logLine;
+            _logTextBox.AppendText(Environment.NewLine + logInfo.logLine);
             _stopwatch.Start();
 
-            for (var i = 0; i < _players.Count; i++)
+            if (_players.Contains(match.Groups["target"].Value))
             {
-                if (logInfo.logLine.Contains(_players[i]))
-                {
-                    _matchedPlayers.Add(_players[i]);
-                }
+                _matchedPlayers.Add(match.Groups["target"].Value);
+            }
+            else
+            {
+                _logTextBox.AppendText($"{ Environment.NewLine }---[Player { match.Groups["target"].Value } is not in the priority list!]---");
+                return;
             }
 
-            _matchCount++;
-
-            if (_matchCount != 3)
+            if (_matchedPlayers.Count != 3)
             {
                 return;
             }
 
-            if (_matchCount != _matchedPlayers.Count)
-            {
-                _logTextBox.Text += $"{ Environment.NewLine }---[Incorrect name(s) in the priority list!]---";
-                return;
-            }
-
-            var tts = new List<string>();
-
-            for (var i = 0; i < _players.Count; i++)
-            {
-                if (_matchedPlayers.Contains(_players[i]))
+            var tts = _players
+                .Where(p => _matchedPlayers.Contains(p))
+                .Select(p =>
                 {
+                    var number = _players.IndexOf(p) + 1;
+
                     if (_ttsUsesNamesCheckBox.Checked)
                     {
-                        tts.Add(_players[i].Split(' ')[0]);
-                        _logTextBox.Text += $"{ Environment.NewLine }---[{ i + 1 }]---[{ _players[i] }]--->---{ _players[i].Split(' ')[0] }---";
+                        _logTextBox.AppendText($"{ Environment.NewLine }---[{ number }]---[{ p }]--->---{ p.Split(' ')[0] }---");
+                        return p.Split(' ')[0];
                     }
                     else
                     {
-                        tts.Add(_ttsNumbers[i]);
-                        _logTextBox.Text += $"{ Environment.NewLine }---[{ i + 1 }]---[{ _players[i] }]--->---{ _ttsNumbers[i] }---";
+                        _logTextBox.AppendText($"{ Environment.NewLine }---[{ number }]---[{ p }]--->---{ number }---");
+                        return number.ToString();
                     }
-                }
-            }
+                });
 
             ActGlobals.oFormActMain.TTS(string.Join(" ", tts));
         }
