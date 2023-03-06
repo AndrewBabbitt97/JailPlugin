@@ -44,7 +44,7 @@ namespace JailPlugin
         /// The log regex for jails
         /// </summary>
         readonly Regex _logRegex = new Regex(
-            "^.{14} (00|1[56]):([0-9A-F]{8}|[0-9A-F]{4}):(Garuda|Titan):(2B6B|2B6C):[^:]*:[0-9A-F]{8}:(?<target>([^:]*)):?.*$",
+            "^.{14} (?:ActionEffect|AOEActionEffect) (00|1[56]):([0-9A-F]{8}|[0-9A-F]{4}):(Garuda|Titan):(2B6B|2B6C):[^:]*:[0-9A-F]{8}:(?<target>([^:]*)):?.*$",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         /// <summary>
